@@ -1,6 +1,9 @@
 const fetch = require('node-fetch'); 
 const OpenAI = require('openai');
-let { openaiApiKey } = require('./config.json');
+require('dotenv').config();
+const token = process.env.DISCORD_TOKEN;
+const openaiApiKey = process.env.OPENAI_API_KEY;
+
 const openai = new OpenAI({ apiKey: openaiApiKey });
 const { EmbedBuilder } = require('discord.js');
 
@@ -33,10 +36,14 @@ async function handlePoll(message) {
 }
 
 
-async function getRandomAnimeWithRatingThreshold(threshold) {
+async function getRandomAnimeWithRatingThreshold(threshold, genre) {
   for (let attempts = 0; attempts < 100; attempts++) {
     try {
-      const response = await fetch('https://api.jikan.moe/v4/random/anime');
+     
+      const url =
+        `https://api.jikan.moe/v4/random/anime?genre=${encodeURIComponent(genre)}`;
+      
+      const response = await fetch(url);
       const data = await response.json();
       const anime = data.data;
 
@@ -45,29 +52,45 @@ async function getRandomAnimeWithRatingThreshold(threshold) {
       }
     } catch (error) {
       console.error('Fetch error:', error);
-      return null; 
-    }
-  }
-  return null; 
-}
-
-
-async function getRandomMangaWithRatingThreshold(threshold) {
-  for (let attempts = 0; attempts < 100; attempts++) {
-    try {
-      const response = await fetch('https://api.jikan.moe/v4/random/manga');
-      const data = await response.json();
-      const manga = data.data;
-
-      if (manga.score >= threshold) {
-        return manga;
-      }
-    } catch (error) {
-      console.error('Fetch error:', error);
-      return null; 
+      return null;
     }
   }
   return null;
+}
+
+
+
+async function getRandomMangaWithRatingThreshold(threshold, genreName) {
+  try {
+   
+    const response = await fetch('https://api.jikan.moe/v4/manga');
+    const data = await response.json();
+    const allManga = data.data;
+    
+    allManga.forEach(manga => {
+      console.log(manga.title, manga.genres.map(g => g.name));
+    });
+    
+    
+    const filteredManga = allManga.filter(manga =>
+      (manga.genres.some(genre => genre.name.toLowerCase() === genreName.toLowerCase()) ||
+       manga.demographics.some(demo => demo.name.toLowerCase() === genreName.toLowerCase())) &&
+      manga.score >= threshold
+    );
+      
+ 
+    if (filteredManga.length === 0) {
+      return null;
+    }
+
+  
+    const randomIndex = Math.floor(Math.random() * filteredManga.length);
+    return filteredManga[randomIndex];
+
+  } catch (error) {
+    console.error('Fetch error:', error);
+    return null;
+  }
 }
 
 
