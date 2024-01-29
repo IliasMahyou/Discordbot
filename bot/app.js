@@ -1,6 +1,8 @@
 const { Client, Events, GatewayIntentBits,EmbedBuilder } = require('discord.js');
 const OpenAI = require('openai');
-const { handlePoll,getRandomAnimeWithRatingThreshold,getRandomMangaWithRatingThreshold,handleChat,showUserInfo } = require('./botFunctions');
+const { handlePoll,getRandomAnimeWithRatingThreshold,getRandomMangaWithRatingThreshold,handleChat,showUserInfo, playMusic, getTop50Anime } = require('./botFunctions');
+const punycode = require('punycode');
+const { channel } = require('diagnostics_channel');
 
 require('dotenv').config();
 const token = process.env.DISCORD_TOKEN;
@@ -35,6 +37,13 @@ client.on(Events.MessageCreate, async (message) => {
   }
     
 }
+if(message.content.toLowerCase().startsWith("!playmusic")){
+  try {
+   await playMusic(message);
+  } catch (error) {
+    console.error("Error handling poll:",error)
+  }
+}
 // !info command
 else if (message.content.startsWith('!info')) {
   
@@ -50,29 +59,29 @@ else if (message.content.startsWith('!info')) {
 }
 
 // !ranomdAnime command
-if (message.content.startsWith('!randomAnime')) {
-  const args = message.content.split(' '); // Splits the message into parts
-  const genre = args.length > 1 ? args.slice(1).join(' ') : null; // Joins the parts into a single string if there is a genre
+if (message.content.toLowerCase().startsWith('!randomanime')) {
+  const args = message.content.split(' '); 
+  const genre = args.length > 1 ? args.slice(1).join(' ') : null; 
 
-  getRandomAnimeWithRatingThreshold(7, genre)
-    .then(anime => {
-      if (anime) {
-        message.reply(`Found an Anime: ${anime.title} - Rating: ${anime.score} - More info: ${anime.url}`);
-      } else {
-        message.reply('Could not find an Anime with the desired rating and genre after several attempts.');
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      message.reply('Sorry, there was an error trying to fetch an Anime.');
-    });
+ 
+ try {
+  await getRandomAnimeWithRatingThreshold(7, genre,message)
+ } catch (error) {
+  console.error('Error:', error);
+  message.reply('Sorry, there was an error trying to fetch an Anime.')
+ }
+  
+}
+// !get top 25 anime 
+if(message.content.toLowerCase().includes("!gettop25anime")) {
+  await getTop50Anime(message);
 }
 
 
 
 
 //!ranomdManga command
-if (message.content.startsWith('!randomManga')) {
+if (message.content.toLowerCase().startsWith('!randommanga')) {
   const args = message.content.split(' '); 
   const genre = args.length > 1 ? args.slice(1).join(' ') : null;
   
