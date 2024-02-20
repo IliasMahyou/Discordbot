@@ -1,1 +1,1 @@
-# Discordbot
+Some discordbot algoritms I made
